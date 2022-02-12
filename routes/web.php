@@ -16,3 +16,6 @@
 $router->get('/', function () use ($router) {
     return $router->app->version();
 });
+
+$router->get('/convert/html', 'ConvertHtmlController@index');
+$router->post('/convert/html', 'ConvertHtmlController@index');
