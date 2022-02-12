@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+cd `dirname $0`
 for version in "1.2.0" "1.1.1"
 do
 	versiondashes=$(echo -n "$version" | sed -e "s/\./\-/g")

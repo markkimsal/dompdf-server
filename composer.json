@@ -40,6 +40,9 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate --ansi",
             "@php -r \"file_exists('docker-compose.yml') || copy('config/docker/docker-compose.yml', 'docker-compose.yml');\""
+        ],
+        "update-versions": [
+            "./vendor_dompdf/update_versions.sh"
         ]
     }
 }
