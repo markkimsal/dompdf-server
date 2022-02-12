@@ -72,8 +72,40 @@ class ConvertHtmlController extends Controller
      */
     public function registerPackagedAutoloader($version='1.2.0')
     {
-        if (!@include('../vendor_dompdf/dompdf-' . $version . '/autoload.inc.php')) {
+        // if (!@include('../vendor_dompdf/dompdf-' . $version . '/autoload.inc.php')) {
+        //     throw new UnexpectedValueException('unknown version');
+        // }
+        $DIR = realpath(base_path('vendor_dompdf/'));
+        $DIR .= "/dompdf-$version/";
+        if (!@file_exists($DIR)) {
             throw new UnexpectedValueException('unknown version');
         }
+
+        // Sabberworm
+        spl_autoload_register(function($class) use ($DIR)
+        {
+            if (strpos($class, 'Sabberworm') !== false) {
+                // dump($class);
+                $file = str_replace('\\', DIRECTORY_SEPARATOR, $class);
+                $file = str_replace('Sabberworm/CSS/', '', $file);
+                // dd($file);
+                $file = realpath($DIR . '/lib/php-css-parser/src/' . (empty($file) ? '' : DIRECTORY_SEPARATOR) . $file . '.php');
+                if (file_exists($file)) {
+                    require_once $file;
+                    return true;
+                }
+            }
+            return false;
+        });
+
+        // php-font-lib
+        require_once $DIR . '/lib/php-font-lib/src/FontLib/Autoloader.php';
+
+        //php-svg-lib
+        require_once $DIR . '/lib/php-svg-lib/src/autoload.php';
+
+        // New PHP 5.3.0 namespaced autoloader
+        require_once $DIR . '/src/Autoloader.php';
+        \Dompdf\Autoloader::register();
     }
 }
