@@ -1,0 +1,19 @@
+---
+version: '3.4'
+
+services:
+    webapp:
+        #image: 'markkimsal/phusion-lemp:7.3-builder'
+        #image: 'markkimsal/phusion-lemp:7.4-builder'
+        image: 'markkimsal/phusion-php:8.0-builder'
+        environment:
+            WWWUID: '${WWWUID:-33}'
+            WWWGID: '${WWWGID:-33}'
+        ports:
+            - 3001:8080
+        # required for linux compatibility with macosx
+        extra_hosts:
+            host.docker.internal: host-gateway
+        volumes:
+            - '.:/app'
+            - './config/docker/container-nginx.vhost.conf:/etc/nginx/conf.d/container-vhost.conf'
