@@ -88,8 +88,8 @@ class ConvertHtmlController extends Controller
         {
             if (strpos($class, 'Sabberworm') !== false) {
                 // dump($class);
-                $file = str_replace('\\', DIRECTORY_SEPARATOR, $class);
-                $file = str_replace('Sabberworm/CSS/', '', $file);
+                $file = str_replace('Sabberworm\\CSS\\', '', $class);
+                $file = str_replace('\\', DIRECTORY_SEPARATOR, $file);
                 // dd($file);
                 $file = realpath($DIR . '/lib/php-css-parser/src/' . (empty($file) ? '' : DIRECTORY_SEPARATOR) . $file . '.php');
                 if (file_exists($file)) {
