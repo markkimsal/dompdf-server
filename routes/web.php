@@ -19,3 +19,6 @@ $router->get('/', function () use ($router) {
 
 $router->get('/convert/html', 'ConvertHtmlController@index');
 $router->post('/convert/html', 'ConvertHtmlController@index');
+
+
+$router->get('/guzzle', 'ConvertHtmlController@internalTestWithGuzzle');

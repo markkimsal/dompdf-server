@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ServerException;
 use Illuminate\Http\Request as HttpRequest;
 use UnexpectedValueException;
 
@@ -107,5 +109,41 @@ class ConvertHtmlController extends Controller
         // New PHP 5.3.0 namespaced autoloader
         require_once $DIR . '/src/Autoloader.php';
         \Dompdf\Autoloader::register();
+    }
+
+    public function internalTestWithGuzzle() {
+        $client = new Client([
+        'base_uri' => 'http://host.docker.internal:3001',
+        ]);
+
+        // $payload = file_get_contents('/my-report-or-document.html');
+        $payload = file_get_contents('../tests/fixtures/html/svg.html');
+
+        try {
+            $response = $client->request('POST', '/convert/html', [
+                'debug' => FALSE,
+                'multipart' => [
+                    [
+                        'headers' => [
+                            'Content-Type' => 'text/html',
+                            'DomPdf-Orientation' => 'portrait',
+                        ],
+                        'name' => 'page=1,orientation=landscape,paper=A4',
+                        'filename' => 'my_document.html',  // must include filename for laravel/lumen/symfony/php?
+                        'contents' => $payload,
+                    ]
+                ]
+            ]);
+        } catch (ServerException $e) {
+            $response = $e->getResponse();
+        }
+
+        return response(
+            $response->getBody(),
+            $response->getStatusCode(),
+            [
+                'Content-type' => $response->getHeader('content-type')
+            ]
+        );
     }
 }
