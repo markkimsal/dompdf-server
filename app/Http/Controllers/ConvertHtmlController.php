@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Domains\Documents\DocumentRequest;
+use Generator;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ServerException;
 use Illuminate\Http\Request as HttpRequest;
+use Illuminate\Support\Facades\File;
+use Ulid\Ulid;
 use UnexpectedValueException;
 
 class ConvertHtmlController extends Controller
@@ -15,25 +19,79 @@ class ConvertHtmlController extends Controller
         $paperOrientation = $r->header('DomPdf-Orientation', 'portrait');
 
         $this->registerPackagedAutoloader($version);
-        $dompdf = new \Dompdf\Dompdf();
 
-        $options = $dompdf->getOptions();
-        $options->set('font_cache', 'storage/fonts/');
-        $options->set('isRemoteEnabled', true);
-        $options->set('pdfBackend', 'CPDF');
-        $options->setChroot([
-            'resources/views/',
-        ]);
+        $requestId = Ulid::generate();
+        $tempDir = storage_path('dompdf_requests/' . (string)$requestId) . '/';
+        File::makeDirectory($tempDir, 0755, true);
+        $documentCount = 0;
+        foreach ($this->documentRequests() as $docReq) {
+            $documentCount++;
+            $dompdf = new \Dompdf\Dompdf();
 
-        $dompdf->loadHtml(
-            $this->base64EncodeSvg(
-                $this->getPostedHtml()
-            )
-        );
-        $dompdf->setPaper($paperSize, $paperOrientation);
-        $dompdf->render();
+            $options = $dompdf->getOptions();
+            $options->set('font_cache', 'storage/fonts/');
+            $options->set('isRemoteEnabled', true);
+            $options->set('pdfBackend', 'CPDF');
+            $options->setChroot([
+                'resources/views/',
+            ]);
+
+            $paperSize        = $docReq->getPaperSize() ?? $paperSize;
+            $paperOrientation = $docReq->getPaperOrientation() ?? $paperOrientation;
+            $dompdf->loadHtml(
+                $this->base64EncodeSvg(
+                    $docReq->getHtmlPayload()
+                )
+            );
+            $dompdf->setPaper($paperSize, $paperOrientation);
+            $dompdf->render();
+            file_put_contents(
+                $tempDir . 'document_' . $documentCount . '.pdf',
+                $dompdf->output()
+            );
+        }
+        return response()->stream(function() use ($tempDir) {
+            $this->mergeDocuments($tempDir);
+        });
+    }
+
+    public function mergeDocuments($tempDir, $attachmentName='document.pdf'): void
+    {
+        $pdfMerger = new \App\Domains\Documents\PdfMerger();
+        $pdfMerger->init();
+
+        $splFileInfo = File::allFiles($tempDir);
+        foreach ($splFileInfo as $fileInfo) {
+            $pdfMerger->addPDF(
+                $fileInfo->getPath() . '/' . $fileInfo->getFilename(),
+                'all'
+            );
+        }
+
+        $pdfMerger->merge(); //For a normal merge (No blank page added)
         header('Content-type: application/pdf');
-        echo $dompdf->output();
+        // "S" is for stream
+        $pdfMerger->save($attachmentName, "S");
+
+        // clean up
+        foreach ($splFileInfo as $fileInfo) {
+            unlink(
+                $fileInfo->getPath() . '/' . $fileInfo->getFilename()
+            );
+        }
+        rmdir($tempDir);
+
+    }
+
+    public function documentRequests(): Generator
+    {
+        foreach ($_FILES as $uploadName => $file) {
+            if ($file['type'] == 'text/html') {
+                $file['fieldname'] = $uploadName;
+                yield new DocumentRequest($file);
+            }
+        }
+        return true;
     }
 
     public function getPostedHtml(): ?string
@@ -126,12 +184,20 @@ class ConvertHtmlController extends Controller
                     [
                         'headers' => [
                             'Content-Type' => 'text/html',
-                            'DomPdf-Orientation' => 'portrait',
                         ],
-                        'name' => 'page=1,orientation=landscape,paper=A4',
+                        'name' => 'page=1,orientation=portrait,paper=A4',
+                        'filename' => 'my_document.html',  // must include filename for laravel/lumen/symfony/php?
+                        'contents' => $payload,
+                    ],
+                    [
+                        'headers' => [
+                            'Content-Type' => 'text/html',
+                        ],
+                        'name' => 'page=2,orientation=landscape,paper=letter',
                         'filename' => 'my_document.html',  // must include filename for laravel/lumen/symfony/php?
                         'contents' => $payload,
                     ]
+
                 ]
             ]);
         } catch (ServerException $e) {
