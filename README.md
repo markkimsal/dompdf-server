@@ -78,6 +78,17 @@ $response = $client->request('POST', '/convert/html', [
 echo $response->getBody();
 ```
 
+# SVGs
+
+Dompdf requires that any SVG be base64 encoded and placed into an image tag.  This server will
+use a regular expression to scan your document for any `<svg>` tags and do this automatically.
+
+If the regex fails for you, you can manually bas64 encode your SVGs and place them into an
+`<img>` tag like this:
+
+```
+<img src="data:imagesvg;base64, ...">
+```
 
 # TESTING
 
