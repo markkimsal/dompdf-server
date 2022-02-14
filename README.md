@@ -77,6 +77,8 @@ $response = $client->request('POST', '/convert/html', [
 
 echo $response->getBody();
 ```
+![image](https://user-images.githubusercontent.com/54099/153879095-a6cdb51f-e622-4501-af1a-b305022d1a69.png)
+
 
 # SVGs
 
