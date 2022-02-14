@@ -5,7 +5,7 @@ services:
     webapp:
         #image: 'markkimsal/phusion-lemp:7.3-builder'
         #image: 'markkimsal/phusion-lemp:7.4-builder'
-        image: 'markkimsal/phusion-php:8.0-builder'
+        image: 'markkimsal/phusion-php-imagick:8.0-builder'
         environment:
             WWWUID: '${WWWUID:-33}'
             WWWGID: '${WWWGID:-33}'
