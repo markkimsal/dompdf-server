@@ -124,17 +124,33 @@ class ConvertHtmlController extends Controller
         }, $content);
     }
 
+    public function registerPackagedAutoloaderComposer($version='1.2.0')
+	{
+        $DIR = realpath(base_path('vendor_dompdf/'));
+        $DIR .= "/dompdf-$version/";
+        if (!@file_exists($DIR)) {
+            throw new UnexpectedValueException('unknown version');
+        }
+		require $DIR . 'autoload.inc.php';
+	}
+
     /**
-     * Setup a working clone of the pre-packaged autoloder.inc.php
+     * Setup a working clone of the pre-packaged autoloader.inc.php
      * with fixes for Sabberworm namespace
+     *
+     * This autoloader.inc.php was broken in 1.2.0, might be fixed in 1.3.0
+     *
      * @throws \UnexpectedValueException
      * @return void
      */
     public function registerPackagedAutoloader($version='1.2.0')
     {
-        // if (!@include('../vendor_dompdf/dompdf-' . $version . '/autoload.inc.php')) {
-        //     throw new UnexpectedValueException('unknown version');
-        // }
+        // returns 1 if second paramter is lower
+        if (version_compare($version, '1.2.0') === 1) {
+            $this->registerPackagedAutoloaderComposer($version);
+            return;
+        }
+
         $DIR = realpath(base_path('vendor_dompdf/'));
         $DIR .= "/dompdf-$version/";
         if (!@file_exists($DIR)) {
